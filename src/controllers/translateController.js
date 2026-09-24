@@ -24,7 +24,10 @@ const generationConfig = {
     },
 };
 
-let model = genAI.getGenerativeModel({ model: FALLBACK_MODEL, safetySettings, generationConfig });
+const buildModel = (name) => genAI.getGenerativeModel({ model: name, safetySettings, generationConfig });
+
+let modelName = FALLBACK_MODEL;
+let model = buildModel(modelName);
 
 // Picks the cheapest available flash model once at startup
 async function initModel() {
@@ -46,7 +49,8 @@ async function initModel() {
             names.find((n) => n.includes('flash')) ||
             FALLBACK_MODEL;
 
-        model = genAI.getGenerativeModel({ model: selected, safetySettings, generationConfig });
+        modelName = selected;
+        model = buildModel(modelName);
         console.log('Selected model:', selected);
     } catch (e) {
         console.error('Model init error, using fallback:', e.message);
@@ -75,7 +79,20 @@ If the text is a single word, return exactly 1 translation. Otherwise return exa
 ${JSON.stringify({ text })}`;
 
     try {
-        const result = await model.generateContent(prompt);
+        let result;
+        try {
+            result = await model.generateContent(prompt);
+        } catch (e) {
+            // Retired or unknown model: switch to the fallback and retry once
+            if ((e.status === 404 || e.status === 400) && modelName !== FALLBACK_MODEL) {
+                console.warn(`Model ${modelName} failed (${e.status}), falling back to ${FALLBACK_MODEL}`);
+                modelName = FALLBACK_MODEL;
+                model = buildModel(modelName);
+                result = await model.generateContent(prompt);
+            } else {
+                throw e;
+            }
+        }
         const parsed = JSON.parse(result.response.text());
         const translations = (parsed.translations || [])
             .filter((t) => typeof t === 'string' && t.trim())
