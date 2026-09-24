@@ -1,6 +1,6 @@
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-lite-latest';
+const FALLBACK_MODEL = 'gemini-flash-lite-latest';
 const MAX_TEXT_LENGTH = 1000;
 const MAX_LANGUAGE_LENGTH = 50;
 
@@ -13,20 +13,45 @@ const safetySettings = [
     HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
 ].map((category) => ({ category, threshold: HarmBlockThreshold.BLOCK_NONE }));
 
-const model = genAI.getGenerativeModel({
-    model: MODEL,
-    safetySettings,
-    generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-            type: 'object',
-            properties: {
-                translations: { type: 'array', items: { type: 'string' } },
-            },
-            required: ['translations'],
+const generationConfig = {
+    responseMimeType: 'application/json',
+    responseSchema: {
+        type: 'object',
+        properties: {
+            translations: { type: 'array', items: { type: 'string' } },
         },
+        required: ['translations'],
     },
-});
+};
+
+let model = genAI.getGenerativeModel({ model: FALLBACK_MODEL, safetySettings, generationConfig });
+
+// Picks the cheapest available flash model once at startup
+async function initModel() {
+    try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        const excluded = ['preview', 'tts', 'image', 'audio', 'live'];
+
+        const names = data.models
+            .map((m) => m.name.replace('models/', ''))
+            .filter((name) => name.includes('flash') && !excluded.some((ex) => name.includes(ex)));
+
+        const selected =
+            process.env.GEMINI_MODEL ||
+            names.find((n) => n.includes('flash-lite-latest')) ||
+            names.find((n) => n.includes('flash-latest')) ||
+            names.find((n) => n.includes('flash-lite')) ||
+            names.find((n) => n.includes('flash')) ||
+            FALLBACK_MODEL;
+
+        model = genAI.getGenerativeModel({ model: selected, safetySettings, generationConfig });
+        console.log('Selected model:', selected);
+    } catch (e) {
+        console.error('Model init error, using fallback:', e.message);
+    }
+}
 
 const translate = async (req, res) => {
     const { text, targetLanguage } = req.body ?? {};
@@ -67,4 +92,4 @@ ${JSON.stringify({ text })}`;
     }
 };
 
-module.exports = { translate };
+module.exports = { translate, initModel };

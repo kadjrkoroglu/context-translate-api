@@ -3,6 +3,7 @@ const express = require('express');
 const { logger } = require('./middleware/logger');
 const { globalLimiter } = require('./middleware/rateLimit');
 const translateRoutes = require('./routes/translateRoutes');
+const { initModel } = require('./controllers/translateController');
 
 const app = express();
 app.set('trust proxy', 1); // real client IP behind Railway's proxy
@@ -21,4 +22,6 @@ app.use((err, req, res, next) => {
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Server running on port ${port}`));
+initModel().finally(() => {
+    app.listen(port, () => console.log(`Server running on port ${port}`));
+});
