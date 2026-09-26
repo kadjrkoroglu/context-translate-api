@@ -1,0 +1,64 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Tier {
+  free
+  standard
+  premium
+}
+
+enum Feature {
+  translate
+  photo
+  chat
+  live
+}
+
+enum Window {
+  hour
+  day
+  week
+  month
+}
+
+model User {
+  id          Int            @id @default(autoincrement())
+  firebaseUid String         @unique @map("firebase_uid")
+  tier        Tier           @default(free)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  usage       UsageCounter[]
+
+  @@map("users")
+}
+
+// Editable limits per tier, feature and time window (no deploy needed to change them)
+model PlanLimit {
+  tier    Tier
+  feature Feature
+  window  Window
+  limit   Int
+
+  @@id([tier, feature, window])
+  @@map("plan_limits")
+}
+
+// One row per user, feature and time window; incremented atomically on each request
+model UsageCounter {
+  userId      Int      @map("user_id")
+  feature     Feature
+  window      Window
+  windowStart DateTime @map("window_start")
+  count       Int      @default(0)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, feature, window, windowStart])
+  @@index([windowStart])
+  @@map("usage_counters")
+}
