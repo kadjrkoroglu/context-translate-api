@@ -34,6 +34,7 @@ model User {
   tier        Tier           @default(free)
   createdAt   DateTime       @default(now()) @map("created_at")
   usage       UsageCounter[]
+  buckets     RateBucket[]
 
   @@map("users")
 }
@@ -54,11 +55,46 @@ model UsageCounter {
   userId      Int      @map("user_id")
   feature     Feature
   window      Window
-  windowStart DateTime @map("window_start")
+  windowStart DateTime @map("window_start") @db.Timestamptz(3)
   count       Int      @default(0)
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, feature, window, windowStart])
   @@index([windowStart])
   @@map("usage_counters")
+}
+
+// Token bucket settings per tier and feature (capacity + refill speed)
+model BucketConfig {
+  tier         Tier
+  feature      Feature
+  capacity     Int
+  refillPerSec Float   @map("refill_per_sec")
+
+  @@id([tier, feature])
+  @@map("bucket_configs")
+}
+
+// Current token bucket state per user and feature
+model RateBucket {
+  userId    Int      @map("user_id")
+  feature   Feature
+  tokens    Float
+  updatedAt DateTime @map("updated_at") @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, feature])
+  @@map("rate_buckets")
+}
+
+// What each tier may do; null limits mean unlimited
+model TierEntitlement {
+  tier            Tier    @id
+  maxDecks        Int?    @map("max_decks")
+  maxCardsPerDeck Int?    @map("max_cards_per_deck")
+  photo           Boolean @default(false)
+  live            Boolean @default(false)
+  chat            Boolean @default(false)
+
+  @@map("tier_entitlements")
 }

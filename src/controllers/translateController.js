@@ -100,11 +100,13 @@ ${JSON.stringify({ text })}`;
             .slice(0, 3);
 
         if (translations.length === 0) {
+            await req.refundQuota?.();
             return res.status(502).json({ error: 'AI returned empty response' });
         }
         res.json({ translations });
     } catch (e) {
         console.error('Translation error:', e.message);
+        await req.refundQuota?.().catch(() => {});
         res.status(502).json({ error: 'Translation failed' });
     }
 };

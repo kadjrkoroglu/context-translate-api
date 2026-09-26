@@ -3,6 +3,7 @@ const express = require('express');
 const { logger } = require('./middleware/logger');
 const { globalLimiter } = require('./middleware/rateLimit');
 const translateRoutes = require('./routes/translateRoutes');
+const entitlementRoutes = require('./routes/entitlementRoutes');
 const { initModel } = require('./controllers/translateController');
 
 const app = express();
@@ -13,6 +14,7 @@ app.use(globalLimiter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/translate', translateRoutes);
+app.use('/entitlements', entitlementRoutes);
 
 app.use((err, req, res, next) => {
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Request too large' });
