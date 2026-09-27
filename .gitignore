@@ -2,3 +2,10 @@
 node_modules/
 .DS_Store
 .firebaserc
+
+# Firebase Functions local dev secrets (not Firebase's own reserved .env/.env.local)
+functions/.env.keys
+functions/.secret.local
+
+# functions/.env holds non-secret shared config (e.g. GEMINI_MODEL); keep it tracked
+!functions/.env

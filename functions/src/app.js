@@ -7,7 +7,7 @@ const entitlementRoutes = require('./routes/entitlementRoutes');
 const { initModel } = require('./controllers/translateController');
 
 const app = express();
-app.set('trust proxy', 1); // real client IP behind Railway's proxy
+app.set('trust proxy', 1); // real client IP behind Cloud Run's single front-end proxy hop
 app.use(express.json({ limit: '10kb' }));
 app.use(logger);
 app.use(globalLimiter);
@@ -23,7 +23,4 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Internal server error' });
 });
 
-const port = process.env.PORT || 3000;
-initModel().finally(() => {
-    app.listen(port, () => console.log(`Server running on port ${port}`));
-});
+module.exports = { app, initModel };
