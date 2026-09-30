@@ -8,6 +8,9 @@ const { initModel } = require('./controllers/translateController');
 
 const app = express();
 app.set('trust proxy', 1); // real client IP behind Cloud Run's single front-end proxy hop
+// Photo lines can exceed 10kb (CJK is 3 bytes/char); parsed first, so the
+// 10kb parser below skips them.
+app.use('/translate/photo', express.json({ limit: '32kb' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(logger);
 app.use(globalLimiter);
