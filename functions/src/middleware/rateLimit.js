@@ -1,8 +1,7 @@
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
-// req.ip can come back undefined behind some proxy setups (seen on the
-// Cloud Functions emulator); fall back to the raw header/socket instead of
-// letting every such request collapse into one shared "unknown" bucket.
+// req.ip can be undefined (emulator); fall back so those requests don't
+// share one "unknown" bucket.
 const resolveKey = (req) => {
     const ip = req.ip || req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress;
     return ip ? ipKeyGenerator(ip) : 'unknown';
