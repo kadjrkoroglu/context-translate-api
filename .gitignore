@@ -9,3 +9,4 @@ functions/.secret.local
 
 # functions/.env holds non-secret shared config (e.g. GEMINI_MODEL); keep it tracked
 !functions/.env
+firebase-debug.log
