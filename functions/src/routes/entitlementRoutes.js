@@ -9,11 +9,12 @@ const router = express.Router();
 router.get('/', requireAuth, ensureUser, async (req, res, next) => {
     try {
         const { tier } = req.dbUser;
-        const [entitlements, translate] = await Promise.all([
+        const [entitlements, translate, live] = await Promise.all([
             prisma.tierEntitlement.findUnique({ where: { tier } }),
             getStatus(req.dbUser, 'translate'),
+            getStatus(req.dbUser, 'live'),
         ]);
-        res.json({ tier, entitlements, translate });
+        res.json({ tier, entitlements, translate, live });
     } catch (e) {
         next(e);
     }
