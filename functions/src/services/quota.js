@@ -105,6 +105,56 @@ async function consume(user, feature) {
     return consumeWindows(user, feature, limits);
 }
 
+// Reserves up to maxSeconds (fewer if less is left); the unused part is refundable.
+async function reserveSeconds(user, feature, maxSeconds) {
+    const limits = await prisma.planLimit.findMany({ where: { tier: user.tier, feature } });
+    if (limits.length === 0) return { allowed: false, notAvailable: true };
+
+    try {
+        return await prisma.$transaction(async (tx) => {
+            const windows = [];
+            let granted = maxSeconds;
+            for (const { window, limit } of limits) {
+                const { start, end } = windowBounds(window);
+                await tx.$executeRaw`
+                    INSERT INTO usage_counters (user_id, feature, "window", window_start, count)
+                    VALUES (${user.id}, ${feature}::"Feature", ${window}::"Window", ${start}, 0)
+                    ON CONFLICT DO NOTHING`;
+                // Lock the row so parallel sessions can't both take the last seconds
+                const [row] = await tx.$queryRaw`
+                    SELECT count FROM usage_counters
+                    WHERE user_id = ${user.id} AND feature = ${feature}::"Feature"
+                      AND "window" = ${window}::"Window" AND window_start = ${start}
+                    FOR UPDATE`;
+                const remaining = limit - row.count;
+                if (remaining < 1) {
+                    throw new QuotaExceeded({ window, limit, resetsAt: end, retryAfterSeconds: secondsUntil(end) });
+                }
+                granted = Math.min(granted, remaining);
+                windows.push({ window, start, limit });
+            }
+            for (const { window, start } of windows) {
+                await tx.$executeRaw`
+                    UPDATE usage_counters SET count = count + ${granted}
+                    WHERE user_id = ${user.id} AND feature = ${feature}::"Feature"
+                      AND "window" = ${window}::"Window" AND window_start = ${start}`;
+            }
+            return { allowed: true, granted, windows };
+        });
+    } catch (e) {
+        if (e instanceof QuotaExceeded) return { allowed: false, ...e.info };
+        throw e;
+    }
+}
+
+async function refundSeconds(userId, feature, window, windowStart, seconds) {
+    if (seconds < 1) return;
+    await prisma.$executeRaw`
+        UPDATE usage_counters SET count = GREATEST(count - ${seconds}, 0)
+        WHERE user_id = ${userId} AND feature = ${feature}::"Feature"
+          AND "window" = ${window}::"Window" AND window_start = ${windowStart}`;
+}
+
 // Current status for the client; does not consume anything
 async function getStatus(user, feature) {
     const bucket = await prisma.bucketConfig.findUnique({
@@ -137,4 +187,4 @@ async function getStatus(user, feature) {
     return { type: 'window', windows };
 }
 
-module.exports = { consume, getStatus, windowBounds };
+module.exports = { consume, reserveSeconds, refundSeconds, getStatus, windowBounds };

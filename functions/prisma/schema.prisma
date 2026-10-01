@@ -30,12 +30,13 @@ enum Window {
 }
 
 model User {
-  id          Int            @id @default(autoincrement())
-  firebaseUid String         @unique @map("firebase_uid")
-  tier        Tier           @default(free)
-  createdAt   DateTime       @default(now()) @map("created_at")
-  usage       UsageCounter[]
-  buckets     RateBucket[]
+  id           Int            @id @default(autoincrement())
+  firebaseUid  String         @unique @map("firebase_uid")
+  tier         Tier           @default(free)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  usage        UsageCounter[]
+  buckets      RateBucket[]
+  liveSessions LiveSession[]
 
   @@map("users")
 }
@@ -98,4 +99,19 @@ model TierEntitlement {
   chat            Boolean @default(false)
 
   @@map("tier_entitlements")
+}
+
+// Seconds reserved up front; unused time is refunded when the session ends.
+model LiveSession {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         Int       @map("user_id")
+  grantedSeconds Int       @map("granted_seconds")
+  window         Window
+  windowStart    DateTime  @map("window_start") @db.Timestamptz(3)
+  startedAt      DateTime  @default(now()) @map("started_at") @db.Timestamptz(3)
+  endedAt        DateTime? @map("ended_at") @db.Timestamptz(3)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("live_sessions")
 }
