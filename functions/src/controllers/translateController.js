@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
+const { sendAiFailure } = require('../services/aiErrors');
 
 const FALLBACK_MODEL = 'gemini-flash-lite-latest';
 const MAX_TEXT_LENGTH = 1000;
@@ -153,13 +154,13 @@ ${JSON.stringify({ text })}`;
 
         if (translations.length === 0) {
             await req.refundQuota?.();
-            return res.status(502).json({ error: 'AI returned empty response' });
+            return sendAiFailure(res, null);
         }
         res.json({ translations });
     } catch (e) {
         console.error('Translation error:', e.message);
         await req.refundQuota?.().catch(() => {});
-        res.status(502).json({ error: 'Translation failed' });
+        sendAiFailure(res, e);
     }
 };
 
@@ -241,7 +242,7 @@ ${JSON.stringify(items)}`;
 
         if (translations.every((t) => !t)) {
             await req.refundQuota?.();
-            return res.status(502).json({ error: 'AI returned empty response' });
+            return sendAiFailure(res, null);
         }
         // A line the model skipped keeps its original text
         res.json({
@@ -251,7 +252,7 @@ ${JSON.stringify(items)}`;
     } catch (e) {
         console.error('Photo translation error:', e.message);
         await req.refundQuota?.().catch(() => {});
-        res.status(502).json({ error: 'Translation failed' });
+        sendAiFailure(res, e);
     }
 };
 

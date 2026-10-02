@@ -1,5 +1,6 @@
 const prisma = require('../services/prisma');
 const { reserveSeconds, refundSeconds, getStatus } = require('../services/quota');
+const { sendAiFailure } = require('../services/aiErrors');
 
 const LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'models/gemini-3.5-live-translate-preview';
 // Gemini closes connections after ~10 minutes.
@@ -32,7 +33,11 @@ async function mintToken(setup, grantedSeconds) {
             bidiGenerateContentSetup: setup,
         }),
     });
-    if (!response.ok) throw new Error(`auth_tokens ${response.status}: ${(await response.text()).slice(0, 300)}`);
+    if (!response.ok) {
+        const error = new Error(`auth_tokens ${response.status}: ${(await response.text()).slice(0, 300)}`);
+        error.status = response.status;
+        throw error;
+    }
     return (await response.json()).name;
 }
 
@@ -79,7 +84,7 @@ const createSession = async (req, res) => {
     } catch (e) {
         console.error('Live session error:', e.message);
         await refundSeconds(req.dbUser.id, 'live', window, start, reserved.granted).catch(() => {});
-        res.status(502).json({ error: 'Could not start live translation' });
+        sendAiFailure(res, e);
     }
 };
 
