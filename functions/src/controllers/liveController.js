@@ -58,6 +58,8 @@ const createSession = async (req, res) => {
         res.set('Retry-After', String(reserved.retryAfterSeconds));
         return res.status(429).json({
             error: 'quota_exceeded',
+            // Lets the app tell a used-up trial apart from the monthly limit.
+            tier,
             window: reserved.window,
             limit: reserved.limit,
             resetsAt: reserved.resetsAt,

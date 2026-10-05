@@ -13,6 +13,8 @@ enum Tier {
   free
   standard
   premium
+  trial_premium
+  trial_standard
 }
 
 enum Feature {
