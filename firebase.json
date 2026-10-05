@@ -11,5 +11,12 @@
         "*.local"
       ]
     }
-  ]
+  ],
+  "hosting": {
+    "public": "hosting",
+    "cleanUrls": true,
+    "ignore": [
+      "**/.*"
+    ]
+  }
 }

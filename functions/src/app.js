@@ -6,6 +6,7 @@ const translateRoutes = require('./routes/translateRoutes');
 const entitlementRoutes = require('./routes/entitlementRoutes');
 const liveRoutes = require('./routes/liveRoutes');
 const studyRoutes = require('./routes/studyRoutes');
+const accountRoutes = require('./routes/accountRoutes');
 const { initModel } = require('./controllers/translateController');
 
 const app = express();
@@ -22,6 +23,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/translate', translateRoutes);
 app.use('/live', liveRoutes);
 app.use('/study', studyRoutes);
+app.use('/account', accountRoutes);
 app.use('/entitlements', entitlementRoutes);
 
 app.use((err, req, res, next) => {
