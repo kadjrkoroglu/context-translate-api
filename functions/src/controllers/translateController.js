@@ -256,4 +256,4 @@ ${JSON.stringify(items)}`;
     }
 };
 
-module.exports = { translate, translatePhoto, initModel };
+module.exports = { translate, translatePhoto, initModel, generate };

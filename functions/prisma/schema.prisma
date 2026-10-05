@@ -32,13 +32,14 @@ enum Window {
 }
 
 model User {
-  id           Int            @id @default(autoincrement())
-  firebaseUid  String         @unique @map("firebase_uid")
-  tier         Tier           @default(free)
-  createdAt    DateTime       @default(now()) @map("created_at")
-  usage        UsageCounter[]
-  buckets      RateBucket[]
-  liveSessions LiveSession[]
+  id            Int            @id @default(autoincrement())
+  firebaseUid   String         @unique @map("firebase_uid")
+  tier          Tier           @default(free)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  usage         UsageCounter[]
+  buckets       RateBucket[]
+  liveSessions  LiveSession[]
+  studySessions StudySession[]
 
   @@map("users")
 }
@@ -93,12 +94,14 @@ model RateBucket {
 
 // What each tier may do; null limits mean unlimited
 model TierEntitlement {
-  tier            Tier    @id
-  maxDecks        Int?    @map("max_decks")
-  maxCardsPerDeck Int?    @map("max_cards_per_deck")
-  photo           Boolean @default(false)
-  live            Boolean @default(false)
-  chat            Boolean @default(false)
+  tier                Tier    @id
+  maxDecks            Int?    @map("max_decks")
+  maxCardsPerDeck     Int?    @map("max_cards_per_deck")
+  photo               Boolean @default(false)
+  live                Boolean @default(false)
+  chat                Boolean @default(false)
+  // Wait after a finished Study with AI session.
+  chatCooldownSeconds Int     @default(10800) @map("chat_cooldown_seconds")
 
   @@map("tier_entitlements")
 }
@@ -116,4 +119,26 @@ model LiveSession {
 
   @@index([userId])
   @@map("live_sessions")
+}
+
+// A card counts only once answered correctly; queue = cards still to go, current first.
+model StudySession {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          Int       @map("user_id")
+  deckId          String    @map("deck_id")
+  deckName        String    @map("deck_name")
+  nativeLanguage  String    @map("native_language")
+  studiedLanguage String    @map("studied_language")
+  items           Json
+  queue           Json
+  task            String
+  attempt         Int       @default(0)
+  taskCount       Int       @default(0) @map("task_count")
+  messageCount    Int       @default(0) @map("message_count")
+  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz(3)
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz(3)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completedAt])
+  @@map("study_sessions")
 }
