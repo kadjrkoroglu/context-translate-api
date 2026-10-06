@@ -21,6 +21,8 @@ function aiFailure(e) {
 
 const sendAiFailure = (res, e) => {
     const { status, error } = aiFailure(e);
+    // Billing or key trouble hits every user; a log-based alert watches this marker.
+    if (error === 'ai_unavailable') console.error(`GEMINI_UNAVAILABLE status=${e?.status} ${String(e?.message).slice(0, 200)}`);
     res.status(status).json({ error });
 };
 
