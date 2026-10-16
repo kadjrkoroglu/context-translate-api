@@ -233,4 +233,20 @@ const answer = async (req, res) => {
     });
 };
 
-module.exports = { getState, startSession, answer };
+// Ends an unfinished session; it counts like a finished one, so the break applies.
+const endSession = async (req, res) => {
+    const { sessionId } = req.body ?? {};
+    if (!isText(sessionId, MAX_ID_LENGTH)) return res.status(400).json({ error: 'sessionId is required' });
+
+    const { id: userId, tier } = req.dbUser;
+    const ended = await prisma.studySession.updateMany({
+        where: { id: sessionId, userId, completedAt: null },
+        data: { completedAt: new Date() },
+    });
+    if (ended.count === 0) return res.status(404).json({ error: 'session_not_found' });
+
+    const entitlements = await prisma.tierEntitlement.findUnique({ where: { tier } });
+    res.json(await loadState(userId, entitlements));
+};
+
+module.exports = { getState, startSession, answer, endSession };
