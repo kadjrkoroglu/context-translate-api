@@ -1,6 +1,6 @@
 {
   "name": "functions",
-  "description": "Cloud Functions for context-translate-api",
+  "description": "Cloud Functions for the Decklingo API",
   "main": "index.js",
   "engines": {
     "node": "22"

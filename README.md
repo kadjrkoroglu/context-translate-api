@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🌐 Context Translate API
+# 🌐 Decklingo API
 
-**Backend for Context Translate & Flashcards**, an iOS app for AI translation, photo translation, live speech translation and AI vocabulary study.
+**Backend for Decklingo**, an iOS app for AI translation, photo translation, live speech translation and AI vocabulary study.
 
 ![Node.js](https://img.shields.io/badge/Node.js_22-339933?logo=nodedotjs&logoColor=white)
 ![Express](https://img.shields.io/badge/Express_5-000000?logo=express&logoColor=white)
