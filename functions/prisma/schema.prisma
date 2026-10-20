@@ -121,23 +121,19 @@ model LiveSession {
   @@map("live_sessions")
 }
 
-// A card counts only once answered correctly; queue = cards still to go, current first.
+// queue = cards still to go, current first; a card leaves it once answered or missed twice.
 model StudySession {
-  id              String    @id @default(uuid()) @db.Uuid
-  userId          Int       @map("user_id")
-  deckId          String    @map("deck_id")
-  deckName        String    @map("deck_name")
-  nativeLanguage  String    @map("native_language")
-  studiedLanguage String    @map("studied_language")
-  items           Json
-  queue           Json
-  task            String
-  attempt         Int       @default(0)
-  taskCount       Int       @default(0) @map("task_count")
-  messageCount    Int       @default(0) @map("message_count")
-  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz(3)
-  completedAt     DateTime? @map("completed_at") @db.Timestamptz(3)
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       Int       @map("user_id")
+  deckId       String    @map("deck_id")
+  deckName     String    @map("deck_name")
+  items        Json
+  queue        Json
+  attempt      Int       @default(0)
+  messageCount Int       @default(0) @map("message_count")
+  startedAt    DateTime  @default(now()) @map("started_at") @db.Timestamptz(3)
+  completedAt  DateTime? @map("completed_at") @db.Timestamptz(3)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, completedAt])
   @@map("study_sessions")

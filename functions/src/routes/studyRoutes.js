@@ -7,7 +7,8 @@ const { getState, startSession, answer, endSession } = require('../controllers/s
 const router = express.Router();
 router.get('/', requireAuth, ensureUser, getState);
 router.post('/start', requireAuth, ensureUser, translateLimiter, startSession);
-router.post('/answer', requireAuth, ensureUser, translateLimiter, answer);
+// Answers are checked without the AI, so only the global limit applies.
+router.post('/answer', requireAuth, ensureUser, answer);
 router.post('/end', requireAuth, ensureUser, endSession);
 
 module.exports = router;
