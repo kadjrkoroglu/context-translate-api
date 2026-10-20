@@ -7,7 +7,9 @@ const MAX_LANGUAGE_LENGTH = 50;
 const MAX_PHOTO_LINES = 100;
 const MAX_PHOTO_TEXT_LENGTH = 5000;
 const MAX_PHOTO_WORDS = 40;
-const MAX_PHOTO_WORD_LENGTH = 60;
+// Same limits as a card in the app.
+const MAX_PHOTO_WORD_LENGTH = 40;
+const MAX_PHOTO_TRANSLATION_LENGTH = 60;
 // Gemini "high demand" (503) is usually gone within a second or two.
 const OVERLOAD_RETRY_DELAYS_MS = [700, 1500];
 
@@ -178,7 +180,7 @@ const cleanWords = (words, lines) => {
             [word, translation] = [translation, word];
         }
         const key = word.toLocaleLowerCase();
-        if (!word || !translation || word.length > MAX_PHOTO_WORD_LENGTH || translation.length > MAX_PHOTO_WORD_LENGTH) continue;
+        if (!word || !translation || word.length > MAX_PHOTO_WORD_LENGTH || translation.length > MAX_PHOTO_TRANSLATION_LENGTH) continue;
         if (key === translation.toLocaleLowerCase() || seen.has(key)) continue;
         seen.add(key);
         result.push({ word, translation });

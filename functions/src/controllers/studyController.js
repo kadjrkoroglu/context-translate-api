@@ -6,7 +6,9 @@ const MIN_SESSION_CARDS = 10;
 const MAX_SESSION_CARDS = 30;
 const MAX_ID_LENGTH = 100;
 const MAX_DECK_NAME_LENGTH = 100;
-const MAX_CARD_TEXT_LENGTH = 200;
+// Same limits as a card in the app.
+const MAX_WORD_LENGTH = 40;
+const MAX_TRANSLATION_LENGTH = 60;
 const MAX_ANSWER_LENGTH = 300;
 // A word shows its answer and moves on after this many misses.
 const MAX_ATTEMPTS = 2;
@@ -69,7 +71,7 @@ const startSession = async (req, res) => {
         Array.isArray(cards) &&
         cards.length >= MIN_SESSION_CARDS &&
         cards.length <= MAX_SESSION_CARDS &&
-        cards.every((c) => isText(c?.id, MAX_ID_LENGTH) && isText(c?.word, MAX_CARD_TEXT_LENGTH) && isText(c?.translation, MAX_CARD_TEXT_LENGTH)) &&
+        cards.every((c) => isText(c?.id, MAX_ID_LENGTH) && isText(c?.word, MAX_WORD_LENGTH) && isText(c?.translation, MAX_TRANSLATION_LENGTH)) &&
         new Set(cards.map((c) => c.id)).size === cards.length;
     if (!validCards) {
         return res.status(400).json({
