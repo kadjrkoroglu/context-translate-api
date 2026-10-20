@@ -36,12 +36,14 @@ function sessionView(session) {
 }
 
 async function loadState(userId, entitlements) {
-    const [active, last] = await Promise.all([
+    const [active, last, latest] = await Promise.all([
         prisma.studySession.findFirst({ where: { userId, completedAt: null } }),
         prisma.studySession.findFirst({ where: { userId, completedAt: { not: null } }, orderBy: { completedAt: 'desc' } }),
+        prisma.studySession.findFirst({ where: { userId }, orderBy: { startedAt: 'desc' } }),
     ]);
     const cooldownSeconds = entitlements?.chatCooldownSeconds ?? DEFAULT_COOLDOWN_SECONDS;
-    const availableAt = last ? new Date(last.completedAt.getTime() + cooldownSeconds * 1000) : null;
+    // The break counts from the start: the AI's work is all done then.
+    const availableAt = latest ? new Date(latest.startedAt.getTime() + cooldownSeconds * 1000) : null;
     return {
         cooldownSeconds,
         nextAvailableAt: availableAt && availableAt > new Date() ? availableAt.toISOString() : null,
@@ -154,7 +156,7 @@ const answer = async (req, res) => {
     });
 };
 
-// Ends an unfinished session; it counts like a finished one, so the break applies.
+// Ends an unfinished session; the break still runs from its start.
 const endSession = async (req, res) => {
     const { sessionId } = req.body ?? {};
     if (!isText(sessionId, MAX_ID_LENGTH)) return res.status(400).json({ error: 'sessionId is required' });
