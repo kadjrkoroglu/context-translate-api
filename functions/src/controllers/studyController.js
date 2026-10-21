@@ -98,8 +98,6 @@ const startSession = async (req, res) => {
         console.error('Study start error:', e.message);
         return sendAiFailure(res, e);
     }
-    // A card without a sentence is asked on its own; none at all means the AI failed.
-    if (sentences.every((s) => s === null)) return sendAiFailure(res, null);
 
     const items = cards.map((c, i) => ({ id: c.id, ...cardsText[i], sentence: sentences[i], done: false, misses: 0 }));
     // The row lock keeps a double tap from opening two sessions.
