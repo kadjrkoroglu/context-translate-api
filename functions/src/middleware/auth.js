@@ -8,7 +8,7 @@ const requireAuth = async (req, res, next) => {
 
     try {
         const decoded = await verifyIdToken(token);
-        req.user = { uid: decoded.uid, email: decoded.email };
+        req.user = { uid: decoded.uid, email: decoded.email, anonymous: decoded.firebase?.sign_in_provider === 'anonymous' };
         next();
     } catch (e) {
         res.status(401).json({ error: 'Invalid auth token' });

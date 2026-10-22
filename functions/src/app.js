@@ -7,6 +7,7 @@ const entitlementRoutes = require('./routes/entitlementRoutes');
 const liveRoutes = require('./routes/liveRoutes');
 const studyRoutes = require('./routes/studyRoutes');
 const accountRoutes = require('./routes/accountRoutes');
+const { revenueCatWebhook } = require('./controllers/billingController');
 const { initModel } = require('./controllers/translateController');
 
 const app = express();
@@ -25,6 +26,7 @@ app.use('/live', liveRoutes);
 app.use('/study', studyRoutes);
 app.use('/account', accountRoutes);
 app.use('/entitlements', entitlementRoutes);
+app.post('/webhooks/revenuecat', revenueCatWebhook);
 
 app.use((err, req, res, next) => {
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Request too large' });

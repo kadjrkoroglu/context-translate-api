@@ -7,6 +7,8 @@ setGlobalOptions({ region: 'europe-west1', maxInstances: 10 });
 const geminiApiKey = defineSecret('GEMINI_API_KEY');
 const databaseUrl = defineSecret('DATABASE_URL');
 const directUrl = defineSecret('DIRECT_URL');
+const revenueCatSecretKey = defineSecret('REVENUECAT_SECRET_KEY');
+const revenueCatWebhookAuth = defineSecret('REVENUECAT_WEBHOOK_AUTH');
 
 // The Express app and Prisma client are required lazily, after secrets are
 // injected into process.env by the Cloud Functions runtime, and only once
@@ -23,6 +25,6 @@ function getApp() {
 }
 
 exports.api = onRequest(
-    { secrets: [geminiApiKey, databaseUrl, directUrl] },
+    { secrets: [geminiApiKey, databaseUrl, directUrl, revenueCatSecretKey, revenueCatWebhookAuth] },
     async (req, res) => (await getApp())(req, res),
 );
