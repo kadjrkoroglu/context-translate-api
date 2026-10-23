@@ -200,8 +200,6 @@ const cleanWords = (words, lines, targetLanguage) => {
             [word, translation] = [translation, word];
         }
         const key = word.toLocaleLowerCase();
-        // Abbreviations ("AI-generated", "TV"); a word in an all-caps photo is still kept.
-        if (word !== word.toLocaleUpperCase() && /(^|[-\s])\p{Lu}{2,4}([-\s]|$)/u.test(word)) continue;
         if (!word || !translation || word.length > MAX_PHOTO_WORD_LENGTH || translation.length > MAX_PHOTO_TRANSLATION_LENGTH) continue;
         if (key === translation.toLocaleLowerCase() || seen.has(key)) continue;
         seen.add(key);
@@ -278,7 +276,7 @@ Each item is a group of lines stacked in one column of the photo. For each item:
 - "joined": true if the lines are one text wrapped over several lines (a sentence, caption or paragraph, like "How" + "are you?" or "Me cheating on the" + "exam by studying"); false if they are separate entries (like "Coffee" + "Tea", "Monday - Friday" + "Saturday", a dish and its price, an address).
 - "lineTranslations": if joined is false, each line translated alone, in order; otherwise empty.
 OCR may have small mistakes: translate what was meant. Keep numbers, prices and proper names; keep text already in ${target} unchanged.
-"words": at most ${MAX_PHOTO_WORDS} single words from the photo for flashcards, in reading order: "word" exactly as in the photo, "translation" its meaning here in ${target}. Only complete, real, correctly spelled words; no fragments, abbreviations, numbers, units or names; no duplicates; none already in ${target}.
+"words": at most ${MAX_PHOTO_WORDS} single words from the photo for flashcards, in reading order: "word" exactly as in the photo, "translation" its meaning here in ${target}. Only complete, real, correctly spelled words; no fragments, numbers, units or names; no duplicates; none already in ${target}.
 
 ${JSON.stringify(items)}`;
 
