@@ -13,7 +13,9 @@ async function entitlementsOf(user) {
         getStatus(user, 'translate'),
         getStatus(user, 'live'),
     ]);
-    return { tier: user.tier, entitlements, translate, live };
+    // A Premium → Standard switch waiting for the period's end, if any.
+    const pending = user.pendingPlan ? { plan: user.pendingPlan, at: user.pendingPlanAt } : null;
+    return { tier: user.tier, entitlements, translate, live, pendingSwitch: pending };
 }
 
 router.get('/', requireAuth, ensureUser, async (req, res, next) => {

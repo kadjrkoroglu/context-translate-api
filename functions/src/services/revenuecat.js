@@ -22,21 +22,46 @@ function tierFromSubscriber(subscriber, now = Date.now()) {
     return 'free';
 }
 
-async function fetchTier(appUserId) {
+async function fetchSubscriber(appUserId) {
     const response = await fetch(`${API_URL}/${encodeURIComponent(appUserId)}`, {
         headers: { Authorization: `Bearer ${process.env.REVENUECAT_SECRET_KEY}` },
     });
     if (!response.ok) throw new Error(`RevenueCat subscriber lookup failed: HTTP ${response.status}`);
-    const { subscriber } = await response.json();
-    return tierFromSubscriber(subscriber);
+    return (await response.json()).subscriber;
+}
+
+// Product ids name their plan: decklingo_standard_monthly.
+const planOf = (productId) => PLANS.find((plan) => productId?.includes(plan)) ?? null;
+const CLEARED = { pendingPlan: null, pendingPlanAt: null };
+
+// Apple moves Premium down to Standard when the paid period ends; RevenueCat
+// reports it as a PRODUCT_CHANGE when it's asked for. The switch is kept until
+// it happens, the subscription ends or the user changes back.
+function pendingSwitch(user, tier, subscriber, event, now = Date.now()) {
+    const current = tier === 'free' ? null : tier.replace(/^trial_/, '');
+    if (event?.type === 'PRODUCT_CHANGE') {
+        const next = planOf(event.new_product_id);
+        if (!current || !next || next === current) return CLEARED;
+        const ends = subscriber?.entitlements?.[current]?.expires_date;
+        return { pendingPlan: next, pendingPlanAt: ends ? new Date(ends) : null };
+    }
+    if (!user.pendingPlan) return {};
+    const dropped = ['CANCELLATION', 'EXPIRATION'].includes(event?.type);
+    const due = user.pendingPlanAt && user.pendingPlanAt.getTime() <= now;
+    return !current || current === user.pendingPlan || dropped || due ? CLEARED : {};
 }
 
 // The app logs in to RevenueCat with the Firebase uid, so the two ids match.
 // Only users who have used the app are updated; unknown ids are skipped.
-async function syncTier(firebaseUid) {
-    if (!(await prisma.user.findUnique({ where: { firebaseUid } }))) return null;
-    const tier = await fetchTier(firebaseUid);
-    return prisma.user.update({ where: { firebaseUid }, data: { tier } });
+async function syncTier(firebaseUid, event) {
+    const user = await prisma.user.findUnique({ where: { firebaseUid } });
+    if (!user) return null;
+    const subscriber = await fetchSubscriber(firebaseUid);
+    const tier = tierFromSubscriber(subscriber);
+    return prisma.user.update({
+        where: { firebaseUid },
+        data: { tier, ...pendingSwitch(user, tier, subscriber, event) },
+    });
 }
 
 // RevenueCat sends the secret we set in its dashboard as the Authorization header.
@@ -62,4 +87,4 @@ function usersOf(event) {
     return [...new Set(ids.filter(isAppUserId))];
 }
 
-module.exports = { tierFromSubscriber, syncTier, isWebhookAuthorized, usersOf };
+module.exports = { tierFromSubscriber, pendingSwitch, syncTier, isWebhookAuthorized, usersOf };
